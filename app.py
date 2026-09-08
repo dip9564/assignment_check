@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import zipfile, os, shutil, json
 import fitz
-from assignment_check.similarity import compare_text
+from similarity import compare_text
 
 
 UPLOAD_DIR = "uploads/submissions"
