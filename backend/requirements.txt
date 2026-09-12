@@ -4,3 +4,5 @@ scikit-learn
 sentence-transformers
 PyMuPDF
 python-multipart
+pytesseract
+Pillow

@@ -1,0 +1,21 @@
+services:
+
+  backend:
+    image: dip9564/assignment-backend:latest
+    container_name: assignment_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    image: dip9564/assignment-frontend:latest
+    container_name: assignment_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped

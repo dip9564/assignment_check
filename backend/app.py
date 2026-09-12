@@ -2,7 +2,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import zipfile, os, shutil, json
 import fitz
-from similarity import compare_text
+import pytesseract
+from PIL import Image
+from similarity import (
+    calculate_all_similarities,
+    calculate_pair_score
+)
 
 
 UPLOAD_DIR = "uploads/submissions"
@@ -35,37 +40,64 @@ def clean_upload_directory():
                 os.rmdir(dir_path)
 
 def calculate_similarity(submissions):
+
+    if len(submissions) < 2:
+        return []
+
+    # Get all texts
+    texts = [submission["text"]for submission in submissions]
+    # Calculate expensive things ONCE
+    (tfidf_matrix,embeddings,cleaned_texts,ngram_sets) = calculate_all_similarities(texts)
+
     results = []
+
     for i in range(len(submissions)):
         for j in range(i + 1, len(submissions)):
 
-            text1 = submissions[i]["text"]
-            text2 = submissions[j]["text"]
-            score = compare_text(text1, text2)
+            score = calculate_pair_score(i,j,tfidf_matrix,embeddings,cleaned_texts,ngram_sets)
 
             results.append({
                 "student1": submissions[i]["filename"],
                 "student2": submissions[j]["filename"],
                 "similarity": score
             })
+
     return results
 
-def extract_text_from_pdf(file_path, skip_pages):
+def extract_from_pdf(file_path, skip_pages):
     document = fitz.open(file_path)
 
-    text = ""
+    pages = []
     for page in document[skip_pages:]:
-        text += page.get_text()
+        pages.append(page.get_text())
 
     document.close()
-    return text
+    return "\n".join(pages)
+
+def extract_text_from_flattened_pdf(file_path, skip_pages):
+    document = fitz.open(file_path)
+
+    pages = []
+    for page in document[skip_pages:]:
+        page_text = page.get_text().strip()
+
+        # Only OCR pages that have almost no usable text
+        if len(page_text) < 30:
+            pix = page.get_pixmap(matrix=fitz.Matrix(1.6, 1.6),alpha=False)
+            image = Image.frombytes("RGB",[pix.width, pix.height],pix.samples)
+            page_text = pytesseract.image_to_string(image,config="--psm 6")
+
+        pages.append(page_text)
+
+    document.close()
+    return "\n".join(pages)
 
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For testing
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,7 +134,7 @@ async def upload_zip(file: UploadFile = File(...)):
 
 
 @app.post("/analyze")
-async def analyze(skip_pages: int = 0):
+async def analyze(skip_pages: int = 0, ocr_enabled: str = "Auto"):
     submissions = []
     try:
         for root, dirs, files in os.walk(UPLOAD_DIR):
@@ -110,7 +142,11 @@ async def analyze(skip_pages: int = 0):
                     if filename.lower().endswith(".pdf"):
                         file_path = os.path.join(root, filename)
 
-                        text = extract_text_from_pdf(file_path,skip_pages)
+                        if  ocr_enabled == "OFF":
+                            text = extract_from_pdf(file_path,skip_pages)
+                        else:
+                            text = extract_text_from_flattened_pdf(file_path, skip_pages)
+                            
                         submissions.append({
                             "filename": os.path.splitext(filename)[0],
                             "text": text
