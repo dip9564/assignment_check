@@ -24,6 +24,13 @@ RUN pip install \
 
 COPY . .
 
+RUN mkdir -p \
+    uploads/submissions \
+    uploads/highlighted \
+    uploads/web \
+    data/results
+
+    
 EXPOSE 8000
 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

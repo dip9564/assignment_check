@@ -6,3 +6,6 @@ PyMuPDF
 python-multipart
 pytesseract
 Pillow
+reportlab
+requests
+python-dotenv

@@ -232,3 +232,9 @@ temp/
 .DS_Store
 
 result.json
+results/
+highlighted/
+submissions/
+web/
+
+.dockerignore

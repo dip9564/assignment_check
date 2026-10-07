@@ -3,10 +3,13 @@ services:
   backend:
     image: dip9564/assignment-backend:latest
     container_name: assignment_backend
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - ./uploads:/app/uploads
+      - ./data:/app/data
     restart: unless-stopped
 
   frontend:

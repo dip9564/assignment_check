@@ -81,9 +81,11 @@ def similar_students(df, threshold=70):
     return students_df
 
 def interaction_graph(df):
+    if df.empty:
+        return None
     interaction_df = df.rename(columns={"Student 1": "source","Student 2": "target","Final (%)": "similarity"})
 
-    net = Network(height="400px", width="100%", directed=False,bgcolor="#0E1117",font_color="white")
+    net = Network(height="500px", width="100%", directed=False,bgcolor="#0E1117",font_color="white")
     net.set_options("""
         var options = {
           "nodes": {
@@ -135,3 +137,17 @@ def interaction_graph(df):
         )
 
     return net
+
+
+def get_student2_options(high_df, student1):
+    students2 = set()
+
+    for _, row in high_df.iterrows():
+
+        if row["Student 1"] == student1:
+            students2.add(row["Student 2"])
+
+        elif row["Student 2"] == student1:
+            students2.add(row["Student 1"])
+
+    return sorted(students2)
