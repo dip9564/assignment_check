@@ -568,7 +568,12 @@ with plagiarism:
     st.write("Upload a searchable PDF to find web pages that may contain similar passages. You’ll receive a source report, a marked copy, and a combined PDF.")
     
     col1, col2 = st.columns(2)
-    uploaded = col1.file_uploader("Choose an assignment or report PDF", type=["pdf"])
+
+    uploaded = col2.selectbox("Or select a pre-uploaded PDF", pdf_files, index=0 if pdf_files else -1, format_func=lambda x: x.name if x else "No PDF selected")
+    new_uploaded = col1.file_uploader("Choose an assignment or report PDF", type=["pdf"])
+
+    if new_uploaded is not None:
+        uploaded = new_uploaded
 
     if uploaded and st.button("Analyze document", type="primary"):
         with st.spinner("Extracting passages and searching the web… Large documents can take a few minutes."):
